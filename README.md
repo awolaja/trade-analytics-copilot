@@ -1,0 +1,3 @@
+# Trade Analytics Copilot
+
+Initializing repository...
