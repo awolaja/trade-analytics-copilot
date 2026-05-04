@@ -1,0 +1,903 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Trade Analytics Copilot API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: dashboard
+    description: Dashboard summary
+  - name: trades
+    description: Trade records
+  - name: analytics
+    description: Analytics and charts
+  - name: journal
+    description: Trade journal
+  - name: insights
+    description: AI insights and coaching
+  - name: brokers
+    description: Broker connections
+  - name: portfolio
+    description: Portfolio overview
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dashboard/recent-trades:
+    get:
+      operationId: getDashboardRecentTrades
+      tags: [dashboard]
+      summary: Get recent trades for dashboard
+      responses:
+        "200":
+          description: Recent trades list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trade"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dashboard/equity-sparkline:
+    get:
+      operationId: getDashboardEquitySparkline
+      tags: [dashboard]
+      summary: Get equity sparkline data for dashboard
+      responses:
+        "200":
+          description: Sparkline data points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EquityPoint"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /trades:
+    get:
+      operationId: listTrades
+      tags: [trades]
+      summary: List all trades
+      parameters:
+        - name: symbol
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, all]
+        - name: setup
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Trade list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /trades/{id}:
+    get:
+      operationId: getTrade
+      tags: [trades]
+      summary: Get a single trade
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trade detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /analytics/equity-curve:
+    get:
+      operationId: getEquityCurve
+      tags: [analytics]
+      summary: Get equity curve data
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y, all]
+            default: 30d
+      responses:
+        "200":
+          description: Equity curve series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityCurveData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /analytics/time-analysis:
+    get:
+      operationId: getTimeAnalysis
+      tags: [analytics]
+      summary: Get performance by time of day and day of week
+      responses:
+        "200":
+          description: Time analysis data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeAnalysisData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /analytics/setups:
+    get:
+      operationId: getSetupPerformance
+      tags: [analytics]
+      summary: Get performance breakdown by setup/strategy
+      responses:
+        "200":
+          description: Setup performance list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SetupPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /journal/entries:
+    get:
+      operationId: listJournalEntries
+      tags: [journal]
+      summary: List journal entries
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Journal entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /journal/tags:
+    get:
+      operationId: listJournalTags
+      tags: [journal]
+      summary: List all journal tags
+      responses:
+        "200":
+          description: Tags list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalTag"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /insights/weekly-review:
+    get:
+      operationId: getWeeklyReview
+      tags: [insights]
+      summary: Get weekly performance review
+      responses:
+        "200":
+          description: Weekly review data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /insights/alerts:
+    get:
+      operationId: getCoachingAlerts
+      tags: [insights]
+      summary: Get coaching alerts and recommendations
+      responses:
+        "200":
+          description: Coaching alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoachingAlert"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /insights/strategy-drift:
+    get:
+      operationId: getStrategyDrift
+      tags: [insights]
+      summary: Get strategy drift analysis
+      responses:
+        "200":
+          description: Strategy drift data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyDrift"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /brokers:
+    get:
+      operationId: listBrokers
+      tags: [brokers]
+      summary: List all connected brokers
+      responses:
+        "200":
+          description: Broker connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrokerConnection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /brokers/sync-status:
+    get:
+      operationId: getBrokerSyncStatus
+      tags: [brokers]
+      summary: Get broker sync status
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /portfolio/overview:
+    get:
+      operationId: getPortfolioOverview
+      tags: [portfolio]
+      summary: Get portfolio overview across all brokers
+      responses:
+        "200":
+          description: Portfolio overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  responses:
+    Unauthorized:
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthUser:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarInitials:
+          type: string
+      required: [username, displayName, avatarInitials]
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalPnL:
+          type: number
+        totalPnLPercent:
+          type: number
+        winRate:
+          type: number
+        avgRR:
+          type: number
+        totalTrades:
+          type: integer
+        openPositions:
+          type: integer
+        dailyPnL:
+          type: number
+        dailyPnLPercent:
+          type: number
+        profitFactor:
+          type: number
+        avgWin:
+          type: number
+        avgLoss:
+          type: number
+        bestTrade:
+          type: number
+        worstTrade:
+          type: number
+      required:
+        - totalPnL
+        - totalPnLPercent
+        - winRate
+        - avgRR
+        - totalTrades
+        - openPositions
+        - dailyPnL
+        - dailyPnLPercent
+        - profitFactor
+        - avgWin
+        - avgLoss
+        - bestTrade
+        - worstTrade
+
+    EquityPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        value:
+          type: number
+        pnl:
+          type: number
+      required: [date, value, pnl]
+
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [long, short]
+        status:
+          type: string
+          enum: [open, closed]
+        setup:
+          type: string
+        entryPrice:
+          type: number
+        exitPrice:
+          type: number
+        quantity:
+          type: number
+        pnl:
+          type: number
+        pnlPercent:
+          type: number
+        rr:
+          type: number
+        openTime:
+          type: string
+        closeTime:
+          type: string
+        broker:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [id, symbol, side, status, setup, entryPrice, quantity, pnl, openTime, broker, tags]
+
+    TradeList:
+      type: object
+      properties:
+        trades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trade"
+        total:
+          type: integer
+      required: [trades, total]
+
+    TradeDetail:
+      allOf:
+        - $ref: "#/components/schemas/Trade"
+        - type: object
+          properties:
+            notes:
+              type: string
+            screenshots:
+              type: array
+              items:
+                type: string
+            stopLoss:
+              type: number
+            takeProfit:
+              type: number
+            mae:
+              type: number
+            mfe:
+              type: number
+            commission:
+              type: number
+
+    EquityCurveData:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquityPoint"
+        startBalance:
+          type: number
+        currentBalance:
+          type: number
+        totalReturn:
+          type: number
+        maxDrawdown:
+          type: number
+        sharpeRatio:
+          type: number
+      required: [points, startBalance, currentBalance, totalReturn, maxDrawdown, sharpeRatio]
+
+    TimeSlotPerformance:
+      type: object
+      properties:
+        label:
+          type: string
+        pnl:
+          type: number
+        trades:
+          type: integer
+        winRate:
+          type: number
+      required: [label, pnl, trades, winRate]
+
+    TimeAnalysisData:
+      type: object
+      properties:
+        byHour:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSlotPerformance"
+        byDayOfWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSlotPerformance"
+        bestHour:
+          type: string
+        worstHour:
+          type: string
+        bestDay:
+          type: string
+        worstDay:
+          type: string
+      required: [byHour, byDayOfWeek, bestHour, worstHour, bestDay, worstDay]
+
+    SetupPerformance:
+      type: object
+      properties:
+        name:
+          type: string
+        trades:
+          type: integer
+        winRate:
+          type: number
+        avgRR:
+          type: number
+        totalPnL:
+          type: number
+        profitFactor:
+          type: number
+        avgHoldTime:
+          type: string
+      required: [name, trades, winRate, avgRR, totalPnL, profitFactor, avgHoldTime]
+
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        tradeId:
+          type: string
+        symbol:
+          type: string
+        date:
+          type: string
+        pnl:
+          type: number
+        rr:
+          type: number
+        setup:
+          type: string
+        emotion:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        rating:
+          type: integer
+      required: [id, tradeId, symbol, date, pnl, rr, setup, notes, tags]
+
+    JournalTag:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+        color:
+          type: string
+      required: [name, count, color]
+
+    WeeklyReview:
+      type: object
+      properties:
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        totalPnL:
+          type: number
+        totalTrades:
+          type: integer
+        winRate:
+          type: number
+        avgRR:
+          type: number
+        bestDay:
+          type: string
+        worstDay:
+          type: string
+        topSetup:
+          type: string
+        improvementAreas:
+          type: array
+          items:
+            type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        dailyBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+              pnl:
+                type: number
+              trades:
+                type: integer
+            required: [day, pnl, trades]
+      required:
+        - weekStart
+        - weekEnd
+        - totalPnL
+        - totalTrades
+        - winRate
+        - avgRR
+        - bestDay
+        - worstDay
+        - topSetup
+        - improvementAreas
+        - strengths
+        - dailyBreakdown
+
+    CoachingAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [warning, tip, achievement, risk]
+        title:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high]
+        createdAt:
+          type: string
+        dismissed:
+          type: boolean
+      required: [id, type, title, message, severity, createdAt, dismissed]
+
+    StrategyDrift:
+      type: object
+      properties:
+        driftScore:
+          type: number
+        baselineSetup:
+          type: string
+        currentTopSetup:
+          type: string
+        setupDistribution:
+          type: array
+          items:
+            type: object
+            properties:
+              setup:
+                type: string
+              percentage:
+                type: number
+              change:
+                type: number
+            required: [setup, percentage, change]
+        weeklyDrift:
+          type: array
+          items:
+            type: object
+            properties:
+              week:
+                type: string
+              score:
+                type: number
+            required: [week, score]
+        recommendation:
+          type: string
+      required:
+        - driftScore
+        - baselineSetup
+        - currentTopSetup
+        - setupDistribution
+        - weeklyDrift
+        - recommendation
+
+    BrokerConnection:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [connected, disconnected, syncing, error]
+        accountBalance:
+          type: number
+        openPositions:
+          type: integer
+        lastSync:
+          type: string
+        logo:
+          type: string
+        accountId:
+          type: string
+      required: [id, name, status, accountBalance, openPositions, lastSync, accountId]
+
+    SyncStatus:
+      type: object
+      properties:
+        lastSyncAt:
+          type: string
+        nextSyncAt:
+          type: string
+        tradesImported:
+          type: integer
+        brokers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+              tradesImported:
+                type: integer
+              lastSync:
+                type: string
+            required: [name, status, tradesImported, lastSync]
+      required: [lastSyncAt, nextSyncAt, tradesImported, brokers]
+
+    PortfolioOverview:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+        totalPnL:
+          type: number
+        totalPnLPercent:
+          type: number
+        openPositions:
+          type: integer
+        allocations:
+          type: array
+          items:
+            type: object
+            properties:
+              broker:
+                type: string
+              balance:
+                type: number
+              percentage:
+                type: number
+            required: [broker, balance, percentage]
+        positions:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              side:
+                type: string
+              quantity:
+                type: number
+              entryPrice:
+                type: number
+              currentPrice:
+                type: number
+              unrealizedPnL:
+                type: number
+              broker:
+                type: string
+            required: [symbol, side, quantity, entryPrice, currentPrice, unrealizedPnL, broker]
+      required: [totalBalance, totalPnL, totalPnLPercent, openPositions, allocations, positions]

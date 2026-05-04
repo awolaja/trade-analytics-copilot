@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/trade-copilot/"
+title = "Trade Analytics Copilot"
+version = "1.0.0"
+id = "artifacts/trade-copilot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/trade-copilot/" ]
+localPort = 21663
+
+[services.development]
+run = "pnpm --filter @workspace/trade-copilot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/trade-copilot", "run", "build" ]
+publicDir = "artifacts/trade-copilot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21663"
+BASE_PATH = "/trade-copilot/"
